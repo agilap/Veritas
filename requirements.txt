@@ -1,0 +1,38 @@
+# TruthScan — requirements.txt
+
+# ── Core ML ───────────────────────────────────────────────────────────────────
+torch>=2.1.0
+transformers>=4.38.0
+accelerate>=0.27.0
+sentencepiece
+
+# ── Dataset (training only) ───────────────────────────────────────────────────
+datasets>=2.17.0
+
+# ── Vision ────────────────────────────────────────────────────────────────────
+Pillow>=10.0.0
+opencv-python-headless>=4.9.0
+
+# ── Layer 0 — URL Scraping ────────────────────────────────────────────────────
+# X / Twitter  → free Bearer Token at https://developer.x.com
+tweepy>=4.14.0
+
+# Instagram    → public posts, no API key needed
+instaloader>=4.10.0
+
+# Facebook     → public pages, no login needed for most posts
+facebook-scraper>=0.2.59
+
+# General HTTP / media download
+requests>=2.31.0
+
+# ── Layer 4 — Source Cross-Reference ─────────────────────────────────────────
+praw>=7.7.1
+wikipedia>=1.4.0
+
+# ── UI ────────────────────────────────────────────────────────────────────────
+gradio>=4.20.0
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+python-dotenv>=1.0.0
+numpy>=1.24.0
