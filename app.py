@@ -289,15 +289,15 @@ with gr.Blocks(css=CSS, title="TruthScan") as demo:
 
     with gr.Tabs():
         with gr.Tab("📝 Layer 1 — Text Credibility"):
-            gr.Markdown("_DistilBERT fine-tuned on LIAR dataset (12.8k labeled statements)_")
+            gr.Markdown("_DistilBERT fine-tuned on LIAR + Philippine fact-check data_")
             text_out = gr.Markdown(elem_classes=["layer-card"])
 
         with gr.Tab("🖼️ Layer 2/3 — Visual Consistency"):
-            gr.Markdown("_OpenAI CLIP ViT-B/32 — zero-shot caption ↔ image/video matching_")
+            gr.Markdown("_OpenAI CLIP ViT-B/32 — PH-calibrated caption ↔ image/video matching_")
             visual_out = gr.Markdown(elem_classes=["layer-card"])
 
         with gr.Tab("🌐 Layer 4 — Source Cross-Reference"):
-            gr.Markdown("_Wikipedia · GNews — weighted corroboration score_")
+            gr.Markdown("_Vera Files · Rappler · Wikipedia · GNews — PH-weighted corroboration score_")
             source_out = gr.Markdown(elem_classes=["layer-card"])
 
     gr.Markdown(
