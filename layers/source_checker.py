@@ -1,6 +1,7 @@
 """
-Layer 4 — Multi-Source Cross-Reference
-Searches the claim across Wikipedia and GNews.
+Layer 4 — Multi-Source Cross-Reference (PH-prioritised)
+Searches the claim across PH fact-checkers (Vera Files, Rappler),
+Wikipedia, and GNews — with higher credibility weights for Philippine sources.
 Returns a weighted credibility signal and a list of source snippets.
 
 Environment variables needed (add to .env or HF Space secrets):
@@ -16,7 +17,7 @@ from typing import List, Tuple
 
 @dataclass
 class SourceResult:
-    source:  str        # "Reddit" | "Wikipedia" | "GNews"
+    source:  str        # "VeraFiles" | "Rappler" | "Wikipedia" | "GNews"
     title:   str
     snippet: str
     url:     str
@@ -55,6 +56,62 @@ def _keywords(caption: str, n: int = 6) -> str:
         if len(result) == n:
             break
     return " ".join(result)
+
+
+# ── PH Fact-Checkers (Vera Files + Rappler) ─────────────────────────────────
+
+def _search_ph_factcheckers(query: str, max_results: int = 5) -> List[SourceResult]:
+    """
+    Search PH fact-check sites via Google site-search scraping.
+    Falls back gracefully if blocked.
+    Highest credibility weight (1.2) — these are IFCN-certified fact-checkers.
+    """
+    results = []
+    sites = [
+        ("verafiles.org", "VeraFiles"),
+        ("rappler.com/newsbreak/fact-check", "Rappler"),
+    ]
+    headers = {"User-Agent": "Mozilla/5.0 (TruthScan/1.0)"}
+
+    for site_domain, source_name in sites:
+        try:
+            import requests as req
+            from bs4 import BeautifulSoup
+            search_url = f"https://www.google.com/search?q=site:{site_domain}+{query}&num={max_results}"
+            resp = req.get(search_url, headers=headers, timeout=10)
+            if resp.status_code != 200:
+                continue
+            soup = BeautifulSoup(resp.text, "html.parser")
+            for g in soup.select("div.g, div[data-sokoban-container]"):
+                link_tag = g.find("a")
+                title_tag = g.find("h3")
+                snippet_tag = g.find("div", class_="VwiC3b") or g.find("span", class_="st")
+                if not link_tag or not title_tag:
+                    continue
+                title = title_tag.get_text(strip=True)
+                url = link_tag.get("href", "")
+                snippet = snippet_tag.get_text(strip=True) if snippet_tag else ""
+
+                # PH fact-check articles are about debunked claims → contradicts
+                title_lower = title.lower()
+                supports = not any(w in title_lower for w in [
+                    "false", "fake", "misleading", "not true",
+                    "fabricated", "hindi totoo", "peke", "claim",
+                ])
+
+                results.append(SourceResult(
+                    source=source_name,
+                    title=_clean(title, 120),
+                    snippet=_clean(snippet, 200),
+                    url=url,
+                    supports_claim=supports,
+                    weight=1.2,  # PH fact-checkers are IFCN-certified → highest weight
+                ))
+                if len(results) >= max_results:
+                    break
+        except Exception as e:
+            print(f"[{source_name}] {e}")
+    return results
 
 
 # ── Wikipedia ─────────────────────────────────────────────────────────────────
@@ -130,6 +187,7 @@ def cross_reference(caption: str) -> Tuple[float, List[SourceResult]]:
     keywords = _keywords(caption)
     all_results: List[SourceResult] = []
 
+    all_results += _search_ph_factcheckers(keywords)
     all_results += _search_wikipedia(keywords)
     all_results += _search_gnews(keywords)
 

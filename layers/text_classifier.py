@@ -1,8 +1,8 @@
 """
 Layer 1 — Text Fake News Classifier
-Fine-tunes DistilBERT on the LIAR dataset from HuggingFace.
-Run `python layers/text_classifier.py --train` once to produce the model checkpoint,
-then inference is instant on every subsequent run.
+Fine-tunes DistilBERT on LIAR + Philippines fact-check data.
+Training is done in train.ipynb (Colab notebook).
+This file handles inference only at runtime.
 """
 
 import os
@@ -71,77 +71,7 @@ def classify_text(caption: str) -> Tuple[str, float, str]:
     return ID2CRED[pred], round(conf, 3), CRED_TIPS[pred]
 
 
-# ── training helper ────────────────────────────────────────────────────────────
-def train(epochs: int = 3, batch_size: int = 32):
-    """
-    Fine-tune DistilBERT on LIAR.
-    Usage:  Open train.ipynb in Google Colab and run all cells
-    or:     python layers/text_classifier.py --train
-    """
-    from datasets import load_dataset
-    from transformers import TrainingArguments, Trainer
-    from torch.utils.data import Dataset as TorchDataset
-
-    print("⏳ Loading LIAR dataset from HuggingFace…")
-    raw = load_dataset("liar")  # train / validation / test splits
-
-    # LIAR label column is named "label" and is already an int 0-5
-    LIAR_INT_MAP = {0: 0, 1: 0, 2: 1, 3: 1, 4: 2, 5: 2}  # collapse to 3 classes
-
-    tokenizer = DistilBertTokenizerFast.from_pretrained("distilbert-base-uncased")
-
-    class LiarDataset(TorchDataset):
-        def __init__(self, split):
-            self.data = raw[split]
-
-        def __len__(self):
-            return len(self.data)
-
-        def __getitem__(self, idx):
-            item = self.data[idx]
-            # LIAR 'statement' column contains the claim text
-            enc = tokenizer(
-                item["statement"],
-                truncation=True, max_length=256, padding="max_length"
-            )
-            return {
-                **{k: torch.tensor(v) for k, v in enc.items()},
-                "labels": torch.tensor(LIAR_INT_MAP[item["label"]], dtype=torch.long),
-            }
-
-    train_ds = LiarDataset("train")
-    val_ds   = LiarDataset("validation")
-
-    model = DistilBertForSequenceClassification.from_pretrained(
-        "distilbert-base-uncased", num_labels=3
-    )
-
-    args = TrainingArguments(
-        output_dir=MODEL_DIR,
-        num_train_epochs=epochs,
-        per_device_train_batch_size=batch_size,
-        per_device_eval_batch_size=64,
-        evaluation_strategy="epoch",
-        save_strategy="epoch",
-        load_best_model_at_end=True,
-        metric_for_best_model="eval_loss",
-        logging_steps=100,
-        fp16=torch.cuda.is_available(),
-    )
-
-    trainer = Trainer(model=model, args=args, train_dataset=train_ds, eval_dataset=val_ds)
-    print("🚀 Training DistilBERT on LIAR…")
-    trainer.train()
-    trainer.save_model(MODEL_DIR)
-    tokenizer.save_pretrained(MODEL_DIR)
-    print(f"✅ Model saved to {MODEL_DIR}")
-
-
 if __name__ == "__main__":
-    import sys
-    if "--train" in sys.argv:
-        train()
-    else:
-        # Quick inference smoke-test
-        label, conf, tip = classify_text("The moon landing was faked by NASA in 1969.")
-        print(f"Label: {label}  Confidence: {conf:.1%}\nTip: {tip}")
+    # Quick inference smoke-test
+    label, conf, tip = classify_text("The moon landing was faked by NASA in 1969.")
+    print(f"Label: {label}  Confidence: {conf:.1%}\nTip: {tip}")
