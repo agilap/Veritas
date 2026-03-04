@@ -1,6 +1,6 @@
 """
-TruthScan — Social Media Fake Post Detector
-Paste a post URL → TruthScan scrapes the caption + media → runs all 5 analysis layers.
+Veritas — URL Credibility Checker
+Paste any URL → Veritas scrapes the content + media → runs all analysis layers.
 
 Run locally:  python app.py
 Deploy:       Push to a HuggingFace Space (Gradio SDK)
@@ -228,20 +228,21 @@ PLATFORM_HELP = """
 - `https://www.instagram.com/p/SHORTCODE/`
 - `https://www.instagram.com/reel/SHORTCODE/`
 - `https://www.facebook.com/pagename/posts/123456789`
+- Any public article or web page URL
 """
 
 with gr.Blocks(css=CSS, title="TruthScan") as demo:
 
-    gr.Markdown("# 🔍 TruthScan", elem_id="title")
+    gr.Markdown("# 🔍 Veritas", elem_id="title")
     gr.Markdown(
-        "Social Media Fake Post Detector — paste a URL, get the truth.",
+        "URL Credibility Checker — paste any URL, get the truth.",
         elem_id="subtitle",
     )
 
     with gr.Row():
         url_in = gr.Textbox(
-            label="🔗 Post URL",
-            placeholder="https://instagram.com/p/…  or  facebook.com/…/posts/…",
+            label="🔗 URL",
+            placeholder="https://instagram.com/p/…   facebook.com/…/posts/…   or any article URL",
             scale=5,
         )
         analyze_btn = gr.Button("🔍 Analyse", variant="primary", scale=1, min_width=120)
@@ -289,21 +290,21 @@ with gr.Blocks(css=CSS, title="TruthScan") as demo:
 
     with gr.Tabs():
         with gr.Tab("📝 Layer 1 — Text Credibility"):
-            gr.Markdown("_DistilBERT fine-tuned on LIAR + Philippine fact-check data_")
+            gr.Markdown("_DistilBERT fine-tuned on LIAR — 3-class credibility (False / Uncertain / Credible)_")
             text_out = gr.Markdown(elem_classes=["layer-card"])
 
         with gr.Tab("🖼️ Layer 2/3 — Visual Consistency"):
-            gr.Markdown("_OpenAI CLIP ViT-B/32 — PH-calibrated caption ↔ image/video matching_")
+            gr.Markdown("_OpenAI CLIP ViT-B/32 — caption ↔ image/video semantic matching_")
             visual_out = gr.Markdown(elem_classes=["layer-card"])
 
         with gr.Tab("🌐 Layer 4 — Source Cross-Reference"):
-            gr.Markdown("_Vera Files · Rappler · Wikipedia · GNews — PH-weighted corroboration score_")
+            gr.Markdown("_Wikipedia · GNews · IFCN fact-checkers — corroboration score_")
             source_out = gr.Markdown(elem_classes=["layer-card"])
 
     gr.Markdown(
         "---\n"
-        "**TruthScan** · CLIP · DistilBERT · TinyLlama · "
-        "[GitHub](https://github.com/your-handle/truthscan) · "
+        "**Veritas** · CLIP · DistilBERT · TinyLlama · "
+        "[GitHub](https://github.com/your-handle/veritas) · "
         "⚠️ *For research use — always verify with primary sources.*"
     )
 

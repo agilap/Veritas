@@ -1,7 +1,7 @@
 """
 Layer 2 — Caption ↔ Image Consistency (CLIP)
 Uses OpenAI CLIP ViT-B/32 — zero fine-tuning needed.
-Loads PH-calibrated thresholds from models/clip_thresholds.json if available.
+Loads calibrated thresholds from models/clip_thresholds.json if available.
 Returns cosine similarity and a human flag.
 """
 
@@ -47,7 +47,7 @@ def embed_image(image: Image.Image) -> np.ndarray:
     return feat.squeeze().numpy()
 
 
-# Load PH-calibrated thresholds if available, otherwise use MS-COCO defaults
+# Load calibrated thresholds if available, otherwise use MS-COCO defaults
 _THRESH_FILE = os.path.join(os.path.dirname(__file__), "..", "models", "clip_thresholds.json")
 
 def _load_thresholds():
@@ -56,7 +56,7 @@ def _load_thresholds():
         try:
             with open(_THRESH_FILE) as f:
                 data = json.load(f)
-            print(f"✅ Loaded PH-calibrated CLIP thresholds: match={data['match']}, uncertain={data['uncertain']}")
+            print(f"✅ Loaded calibrated CLIP thresholds: match={data['match']}, uncertain={data['uncertain']}")
             return {"match": data["match"], "uncertain": data["uncertain"]}
         except Exception as e:
             print(f"⚠️ Could not load {_THRESH_FILE}: {e} — using defaults")

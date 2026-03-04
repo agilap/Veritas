@@ -1,7 +1,7 @@
 """
-Layer 1 — Text Fake News Classifier
-Fine-tunes DistilBERT on LIAR + Philippines fact-check data.
-Training is done in train.ipynb (Colab notebook).
+Layer 1 — Text Credibility Classifier
+DistilBERT fine-tuned on the LIAR dataset (3-class: False / Uncertain / Credible).
+Training is done in train.ipynb.
 This file handles inference only at runtime.
 """
 

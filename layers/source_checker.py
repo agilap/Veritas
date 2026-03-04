@@ -1,7 +1,7 @@
 """
-Layer 4 — Multi-Source Cross-Reference (PH-prioritised)
-Searches the claim across PH fact-checkers (Vera Files, Rappler),
-Wikipedia, and GNews — with higher credibility weights for Philippine sources.
+Layer 4 — Multi-Source Cross-Reference
+Searches the claim across global fact-checkers (Snopes, AFP Fact Check),
+Wikipedia, and GNews.
 Returns a weighted credibility signal and a list of source snippets.
 
 Environment variables needed (add to .env or HF Space secrets):
@@ -17,7 +17,7 @@ from typing import List, Tuple
 
 @dataclass
 class SourceResult:
-    source:  str        # "VeraFiles" | "Rappler" | "Wikipedia" | "GNews"
+    source:  str        # "Snopes" | "AFP Fact Check" | "Wikipedia" | "GNews"
     title:   str
     snippet: str
     url:     str
@@ -58,20 +58,20 @@ def _keywords(caption: str, n: int = 6) -> str:
     return " ".join(result)
 
 
-# ── PH Fact-Checkers (Vera Files + Rappler) ─────────────────────────────────
+# ── Global Fact-Checkers (Snopes, AFP Fact Check) ───────────────────────────────
 
-def _search_ph_factcheckers(query: str, max_results: int = 5) -> List[SourceResult]:
+def _search_factcheckers(query: str, max_results: int = 5) -> List[SourceResult]:
     """
-    Search PH fact-check sites via Google site-search scraping.
+    Search global fact-check sites via Google site-search scraping.
     Falls back gracefully if blocked.
     Highest credibility weight (1.2) — these are IFCN-certified fact-checkers.
     """
     results = []
     sites = [
-        ("verafiles.org", "VeraFiles"),
-        ("rappler.com/newsbreak/fact-check", "Rappler"),
+        ("snopes.com", "Snopes"),
+        ("factcheck.afp.com", "AFP Fact Check"),
     ]
-    headers = {"User-Agent": "Mozilla/5.0 (TruthScan/1.0)"}
+    headers = {"User-Agent": "Mozilla/5.0 (Veritas/1.0)"}
 
     for site_domain, source_name in sites:
         try:
@@ -92,11 +92,11 @@ def _search_ph_factcheckers(query: str, max_results: int = 5) -> List[SourceResu
                 url = link_tag.get("href", "")
                 snippet = snippet_tag.get_text(strip=True) if snippet_tag else ""
 
-                # PH fact-check articles are about debunked claims → contradicts
+                # Fact-check articles are about debunked claims → contradicts
                 title_lower = title.lower()
                 supports = not any(w in title_lower for w in [
                     "false", "fake", "misleading", "not true",
-                    "fabricated", "hindi totoo", "peke", "claim",
+                    "fabricated", "debunked", "claim",
                 ])
 
                 results.append(SourceResult(
@@ -105,7 +105,7 @@ def _search_ph_factcheckers(query: str, max_results: int = 5) -> List[SourceResu
                     snippet=_clean(snippet, 200),
                     url=url,
                     supports_claim=supports,
-                    weight=1.2,  # PH fact-checkers are IFCN-certified → highest weight
+                    weight=1.2,  # IFCN-certified fact-checkers → highest weight
                 ))
                 if len(results) >= max_results:
                     break
@@ -187,7 +187,7 @@ def cross_reference(caption: str) -> Tuple[float, List[SourceResult]]:
     keywords = _keywords(caption)
     all_results: List[SourceResult] = []
 
-    all_results += _search_ph_factcheckers(keywords)
+    all_results += _search_factcheckers(keywords)
     all_results += _search_wikipedia(keywords)
     all_results += _search_gnews(keywords)
 
