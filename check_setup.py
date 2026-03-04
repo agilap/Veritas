@@ -46,11 +46,8 @@ check("cv2 (opencv)",     lambda: __import__("cv2"))
 check("numpy",            lambda: __import__("numpy"))
 check("requests",         lambda: __import__("requests"))
 check("dotenv",           lambda: __import__("dotenv"))
-check("praw (Reddit)",    lambda: __import__("praw"),           required=False)
-check("wikipedia",        lambda: __import__("wikipedia"),      required=False)
 check("instaloader",      lambda: __import__("instaloader"),    required=False)
 check("facebook_scraper", lambda: __import__("facebook_scraper"), required=False)
-check("tweepy",           lambda: __import__("tweepy"),         required=False)
 check("datasets (HF)",    lambda: __import__("datasets"),       required=False)
 
 
@@ -65,10 +62,7 @@ def require_env(key):
     if not val:
         raise EnvironmentError(f"{key} is not set in .env or environment")
 
-check("TWITTER_BEARER_TOKEN",  lambda: require_env("TWITTER_BEARER_TOKEN"),  required=False)
-check("REDDIT_CLIENT_ID",      lambda: require_env("REDDIT_CLIENT_ID"),      required=False)
-check("REDDIT_CLIENT_SECRET",  lambda: require_env("REDDIT_CLIENT_SECRET"),  required=False)
-check("GNEWS_API_KEY",         lambda: require_env("GNEWS_API_KEY"),         required=False)
+check("GNEWS_API_KEY",          lambda: require_env("GNEWS_API_KEY"),         required=False)
 
 
 # ── 3. Trained model ───────────────────────────────────────────────────────────

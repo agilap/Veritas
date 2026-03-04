@@ -28,7 +28,6 @@ from layers.verdict         import generate_verdict
 # ── Icons ──────────────────────────────────────────────────────────────────────
 
 PLATFORM_ICONS = {
-    Platform.TWITTER:   "𝕏",
     Platform.INSTAGRAM: "📸",
     Platform.FACEBOOK:  "🔵",
     Platform.UNKNOWN:   "🌐",
@@ -141,7 +140,7 @@ def run_analysis(url: str, use_llm: bool):
     else:
         source_out = (
             "ℹ️ No API keys configured — external source check skipped.\n\n"
-            "Add `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, and `GNEWS_API_KEY` "
+            "Add `GNEWS_API_KEY` "
             "to your `.env` or HF Space Secrets."
         )
 
@@ -226,9 +225,8 @@ footer { display: none !important; }
 
 PLATFORM_HELP = """
 **Supported URLs:**
-- `https://x.com/username/status/123456789`
-- `https://twitter.com/username/status/123456789`
 - `https://www.instagram.com/p/SHORTCODE/`
+- `https://www.instagram.com/reel/SHORTCODE/`
 - `https://www.facebook.com/pagename/posts/123456789`
 """
 
@@ -243,7 +241,7 @@ with gr.Blocks(css=CSS, title="TruthScan") as demo:
     with gr.Row():
         url_in = gr.Textbox(
             label="🔗 Post URL",
-            placeholder="https://x.com/…  or  instagram.com/p/…  or  facebook.com/…/posts/…",
+            placeholder="https://instagram.com/p/…  or  facebook.com/…/posts/…",
             scale=5,
         )
         analyze_btn = gr.Button("🔍 Analyse", variant="primary", scale=1, min_width=120)
@@ -299,7 +297,7 @@ with gr.Blocks(css=CSS, title="TruthScan") as demo:
             visual_out = gr.Markdown(elem_classes=["layer-card"])
 
         with gr.Tab("🌐 Layer 4 — Source Cross-Reference"):
-            gr.Markdown("_Reddit · Wikipedia · GNews — weighted corroboration score_")
+            gr.Markdown("_Wikipedia · GNews — weighted corroboration score_")
             source_out = gr.Markdown(elem_classes=["layer-card"])
 
     gr.Markdown(

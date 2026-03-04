@@ -14,9 +14,6 @@ Pillow>=10.0.0
 opencv-python-headless>=4.9.0
 
 # ── Layer 0 — URL Scraping ────────────────────────────────────────────────────
-# X / Twitter  → free Bearer Token at https://developer.x.com
-tweepy>=4.14.0
-
 # Instagram    → public posts, no API key needed
 instaloader>=4.10.0
 
@@ -26,8 +23,7 @@ facebook-scraper>=0.2.59
 # General HTTP / media download
 requests>=2.31.0
 
-# ── Layer 4 — Source Cross-Reference ─────────────────────────────────────────
-praw>=7.7.1
+# ── Layer 4 — Source Cross-Reference ─────────────────────────────────────
 wikipedia>=1.4.0
 
 # ── UI ────────────────────────────────────────────────────────────────────────
