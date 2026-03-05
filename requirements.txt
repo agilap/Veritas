@@ -21,6 +21,8 @@ instaloader>=4.10.0
 
 # Facebook     → public pages, no login needed for most posts
 facebook-scraper>=0.2.59
+lxml_html_clean>=0.1.0
+playwright>=1.40.0
 
 # General HTTP / media download
 requests>=2.31.0
