@@ -1,125 +1,95 @@
-"""
-check_setup.py — Run this before app.py to verify everything is in place.
-
-Usage:  python check_setup.py
-
-Checks:
-  ✅ All required Python packages are installed
-  ✅ API keys are present (warns but doesn't fail on optional ones)
-  ✅ Trained DistilBERT model exists (warns if missing)
-  ✅ CLIP can be imported
-  ✅ OpenCV can read a dummy video frame
-"""
-
-import sys
 import os
+import re
+import sys
 
-PASS = "✅"
-WARN = "⚠️ "
+from dotenv import dotenv_values
+
+CHECK = "✅"
 FAIL = "❌"
 
-errors = []
-warnings = []
+
+def print_result(label: str, ok: bool, detail: str | None = None) -> bool:
+    icon = CHECK if ok else FAIL
+    if detail:
+        print(f"{icon} {label} ({detail})")
+    else:
+        print(f"{icon} {label}")
+    return ok
 
 
-def check(label, fn, required=True):
-    try:
-        fn()
-        print(f"  {PASS}  {label}")
-    except Exception as e:
-        if required:
-            print(f"  {FAIL}  {label}\n       → {e}")
-            errors.append(label)
-        else:
-            print(f"  {WARN} {label}\n       → {e}")
-            warnings.append(label)
+def normalize_requirement_name(requirement_line: str) -> str:
+    base = re.split(r"[<>=!~]", requirement_line, maxsplit=1)[0]
+    return base.strip()
 
 
-# ── 1. Packages ────────────────────────────────────────────────────────────────
-print("\n📦 Python packages")
-
-check("torch",            lambda: __import__("torch"))
-check("transformers",     lambda: __import__("transformers"))
-check("gradio",           lambda: __import__("gradio"))
-check("PIL (Pillow)",     lambda: __import__("PIL"))
-check("cv2 (opencv)",     lambda: __import__("cv2"))
-check("numpy",            lambda: __import__("numpy"))
-check("requests",         lambda: __import__("requests"))
-check("dotenv",           lambda: __import__("dotenv"))
-check("instaloader",      lambda: __import__("instaloader"),    required=False)
-check("facebook_scraper", lambda: __import__("facebook_scraper"), required=False)
-check("datasets (HF)",    lambda: __import__("datasets"),       required=False)
+def module_name_for_package(package_name: str) -> str:
+    mapping = {
+        "open-clip-torch": "open_clip",
+        "opencv-python": "cv2",
+        "beautifulsoup4": "bs4",
+        "python-dotenv": "dotenv",
+        "pillow": "PIL",
+        "tavily-python": "tavily",
+    }
+    return mapping.get(package_name, package_name.replace("-", "_"))
 
 
-# ── 2. API keys ────────────────────────────────────────────────────────────────
-print("\n🔑 API keys / secrets")
-
-from dotenv import load_dotenv
-load_dotenv()
-
-def require_env(key):
-    val = os.environ.get(key, "")
-    if not val:
-        raise EnvironmentError(f"{key} is not set in .env or environment")
-
-check("GNEWS_API_KEY",          lambda: require_env("GNEWS_API_KEY"),         required=False)
+def read_requirements(requirements_path: str) -> list[str]:
+    packages: list[str] = []
+    with open(requirements_path, "r", encoding="utf-8") as req_file:
+        for raw_line in req_file:
+            line = raw_line.strip()
+            if not line or line.startswith("#"):
+                continue
+            packages.append(normalize_requirement_name(line))
+    return packages
 
 
-# ── 3. Trained model ───────────────────────────────────────────────────────────
-print("\n🧠 Trained model (Layer 1)")
+def check_env_keys(root_dir: str) -> bool:
+    print("\nEnvironment keys")
+    env_path = f"{root_dir}/.env"
+    env_values = dotenv_values(env_path)
 
-model_dir = os.path.join(os.path.dirname(__file__), "models", "liar_distilbert")
-
-def check_model():
-    if not os.path.isdir(model_dir):
-        raise FileNotFoundError(
-            f"Not found: {model_dir}\n"
-            "       Run `python train.py` once to train DistilBERT on LIAR.\n"
-            "       Layer 1 scores will be random until this is done."
-        )
-    config = os.path.join(model_dir, "config.json")
-    if not os.path.isfile(config):
-        raise FileNotFoundError("model dir exists but config.json missing — re-run train.py")
-
-check("DistilBERT / LIAR checkpoint", check_model, required=False)
+    ok_serper = print_result(
+        "SERPER_API_KEY set",
+        bool(str(env_values.get("SERPER_API_KEY", "")).strip()),
+    )
+    ok_tavily = print_result(
+        "TAVILY_API_KEY set",
+        bool(str(env_values.get("TAVILY_API_KEY", "")).strip()),
+    )
+    return ok_serper and ok_tavily
 
 
-# ── 4. CLIP smoke test ─────────────────────────────────────────────────────────
-print("\n🖼️  CLIP import (will download ~600 MB on first run)")
-
-def check_clip():
-    from transformers import CLIPModel, CLIPProcessor
-    # Don't actually download — just confirm import works
-    print("       (model will be auto-downloaded on first analysis run)")
-
-check("CLIP ViT-B/32 importable", check_clip)
-
-
-# ── 5. OpenCV smoke test ───────────────────────────────────────────────────────
-print("\n🎬 OpenCV")
-
-def check_cv2():
-    import cv2
-    import numpy as np
-    frame = np.zeros((100, 100, 3), dtype=np.uint8)
-    _, buf = cv2.imencode(".jpg", frame)
-    assert len(buf) > 0
-
-check("OpenCV encode/decode", check_cv2)
+def check_imports(requirements_path: str) -> bool:
+    print("\nPackage imports")
+    all_ok = True
+    for package in read_requirements(requirements_path):
+        module_name = module_name_for_package(package)
+        try:
+            __import__(module_name)
+            print_result(f"{package} importable", True)
+        except Exception as exc:
+            all_ok = False
+            print_result(f"{package} importable", False, str(exc))
+    return all_ok
 
 
-# ── Summary ───────────────────────────────────────────────────────────────────
-print("\n" + "─" * 50)
+def main() -> int:
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    requirements_path = os.path.join(root_dir, "requirements.txt")
 
-if errors:
-    print(f"\n{FAIL} {len(errors)} REQUIRED check(s) failed — fix before running app.py:")
-    for e in errors:
-        print(f"    • {e}")
-    sys.exit(1)
-elif warnings:
-    print(f"\n{WARN} {len(warnings)} optional check(s) incomplete (app will still run):")
-    for w in warnings:
-        print(f"    • {w}")
-    print("\n✅ Core setup looks good — run:  python app.py")
-else:
-    print("\n✅ Everything looks good — run:  python app.py")
+    print("Veritas v2 setup check")
+    env_ok = check_env_keys(root_dir)
+    imports_ok = check_imports(requirements_path)
+
+    if env_ok and imports_ok:
+        print("\n✅ All critical checks passed")
+        return 0
+
+    print("\n❌ One or more critical checks failed")
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

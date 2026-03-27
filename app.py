@@ -65,10 +65,11 @@ def run_analysis(url: str, use_llm: bool):
     caption   = post.caption or ""
 
     fetch_warning = f"\n\n> ⚠️ Partial fetch: {post.error}" if post.error else ""
+    caption_md = caption.replace("\n", "  \n> ") if caption else "_No caption found_"
     fetch_md = (
         f"### {icon} {platform} post by **{author}**\n"
         f"*{timestamp}*\n\n"
-        f'> {caption.replace(chr(10), "  \n> ") if caption else "_No caption found_"}'
+        f"> {caption_md}"
         f"{fetch_warning}"
     )
 
@@ -231,7 +232,7 @@ PLATFORM_HELP = """
 - Any public article or web page URL
 """
 
-with gr.Blocks(css=CSS, title="TruthScan") as demo:
+with gr.Blocks(title="TruthScan") as demo:
 
     gr.Markdown("# 🔍 Veritas", elem_id="title")
     gr.Markdown(
@@ -323,4 +324,5 @@ if __name__ == "__main__":
         server_name="0.0.0.0",
         server_port=int(os.environ.get("PORT", 7860)),
         share=False,
+        css=CSS,
     )

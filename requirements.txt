@@ -1,38 +1,21 @@
-# TruthScan — requirements.txt
+- transformers>=4.40.0
+- torch>=2.2.0
+- open-clip-torch>=2.24.0
+- opencv-python>=4.9.0
+- gradio>=4.0.0
+- requests>=2.31.0
+- beautifulsoup4>=4.12.0
+- datasets>=2.18.0
+- accelerate>=0.29.0
+- peft>=0.10.0
+- python-dotenv>=1.0.0
+- pillow>=10.0.0
+- tavily-python>=0.3.0
+- scikit-learn>=1.4.0
 
-# ── Core ML ───────────────────────────────────────────────────────────────────
-torch>=2.1.0
-transformers>=4.38.0
-accelerate>=0.27.0
-sentencepiece
+# optional (requires ~6GB VRAM): pip install salesforce-lavis
 
-# ── Dataset / training helpers ────────────────────────────────────────────────
-pandas>=2.0.0
-scikit-learn>=1.3.0
-beautifulsoup4>=4.12.0
-
-# ── Vision ────────────────────────────────────────────────────────────────────
-Pillow>=10.0.0
-opencv-python-headless>=4.9.0
-
-# ── Layer 0 — URL Scraping ────────────────────────────────────────────────────
-# Instagram    → public posts, no API key needed
-instaloader>=4.10.0
-
-# Facebook     → public pages, no login needed for most posts
-facebook-scraper>=0.2.59
-lxml_html_clean>=0.1.0
-playwright>=1.40.0
-
-# General HTTP / media download
-requests>=2.31.0
-
-# ── Layer 4 — Source Cross-Reference ─────────────────────────────────────
-wikipedia>=1.4.0
-
-# ── UI ────────────────────────────────────────────────────────────────────────
-gradio>=4.20.0
-
-# ── Utilities ─────────────────────────────────────────────────────────────────
-python-dotenv>=1.0.0
-numpy>=1.24.0
+bitsandbytes>=0.43.0
+# optional captioning model (lightweight, ~990MB): already included via transformers
+# BLIP-2 (blip2-opt-2.7b) is NOT used — too large for 4GB VRAM
+# Use Salesforce/blip-image-captioning-base instead (loaded via transformers)
