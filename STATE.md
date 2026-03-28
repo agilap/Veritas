@@ -15,6 +15,7 @@ Layer status:
 | Date | Change | Notes |
 | --- | --- | --- |
 | 2026-03-28 | Documented current layer status | Added baseline status for Layers 0-5 and UI |
+| 2026-03-28 | Updated env and setup checks | Replaced .env.example (Serper/Tavily only + optional Facebook cookies), removed GNews usage, and added bitsandbytes import validation in check_setup.py |
 
 ## Dependencies State
 

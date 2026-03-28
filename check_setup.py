@@ -50,15 +50,22 @@ def check_env_keys(root_dir: str) -> bool:
     env_path = f"{root_dir}/.env"
     env_values = dotenv_values(env_path)
 
-    ok_serper = print_result(
+    has_serper = bool(str(env_values.get("SERPER_API_KEY", "")).strip())
+    has_tavily = bool(str(env_values.get("TAVILY_API_KEY", "")).strip())
+
+    print_result(
         "SERPER_API_KEY set",
-        bool(str(env_values.get("SERPER_API_KEY", "")).strip()),
+        has_serper,
+        None if has_serper else "warning only: Tavily/DDG fallback available",
     )
-    ok_tavily = print_result(
+    print_result(
         "TAVILY_API_KEY set",
-        bool(str(env_values.get("TAVILY_API_KEY", "")).strip()),
+        has_tavily,
+        None if has_tavily else "warning only: Serper/DDG fallback available",
     )
-    return ok_serper and ok_tavily
+
+    # Missing keys are warnings only and do not fail setup checks.
+    return True
 
 
 def check_imports(requirements_path: str) -> bool:
@@ -72,6 +79,13 @@ def check_imports(requirements_path: str) -> bool:
         except Exception as exc:
             all_ok = False
             print_result(f"{package} importable", False, str(exc))
+
+    try:
+        __import__("bitsandbytes")
+        print_result("bitsandbytes importable", True)
+    except Exception as exc:
+        all_ok = False
+        print_result("bitsandbytes importable", False, str(exc))
     return all_ok
 
 
