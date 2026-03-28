@@ -21,6 +21,7 @@ Layer status:
 | 2026-03-28 | Layer 4 evidence retrieval implemented | Added _retrieve_evidence(): TinyLlama query rewrite, Serper->Tavily->DuckDuckGo fallback search, URL scraping, 300-word chunking, and TF-IDF top-chunk relevance scoring |
 | 2026-03-28 | Layer 4 stance + aggregation completed | Added _classify_stance(), _aggregate_score(), and full cross_reference() orchestration with non-checkable short-circuit and corroboration output from SUPPORTS/REFUTES evidence |
 | 2026-03-28 | Layer 5 TinyLlama reuse + NF4 finalized | Updated verdict.py to reuse source_checker TinyLlama loader (single app-wide instance), handle Layer 4 checkable/post_type outputs, apply new weighted formula, and fall back to rule-based verdict on model/OOM errors |
+| 2026-03-28 | UI refreshed for new Layer 2/4/5 outputs | Layer 2 now shows BLIP caption + text-text similarity, Layer 4 shows post type + checkability-aware source table with stance badges, and verdict banner color mapping now supports fake/real/uncertain/non-checkable/satire labels |
 
 ## Dependencies State
 

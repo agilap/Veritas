@@ -34,6 +34,38 @@ PLATFORM_ICONS = {
 }
 
 
+def _verdict_css_class(verdict_text: str) -> str:
+    upper = (verdict_text or "").upper()
+    if "SATIRE DETECTED" in upper:
+        return "verdict-blue"
+    if "NOT FACT-CHECKABLE" in upper:
+        return "verdict-gray"
+    if "LIKELY REAL" in upper or "LIKELY AUTHENTIC" in upper:
+        return "verdict-green"
+    if "UNCERTAIN" in upper or "SUSPICIOUS" in upper:
+        return "verdict-yellow"
+    if "LIKELY FAKE" in upper or "LIKELY FABRICATED" in upper:
+        return "verdict-red"
+    return "verdict-yellow"
+
+
+def _format_verdict_banner(verdict_text: str) -> str:
+    css_class = _verdict_css_class(verdict_text)
+    html_text = (verdict_text or "").replace("\n", "<br>")
+    return f"<div class='verdict-banner {css_class}'>{html_text}</div>"
+
+
+def _not_checkable_reason(post_type: str) -> str:
+    mapping = {
+        "OPINION": "opinion content",
+        "SATIRE": "satire/parody content",
+        "LIFESTYLE": "lifestyle content",
+        "PERSONAL": "a personal story",
+        "OTHER": "non-factual content",
+    }
+    return mapping.get(post_type, "non-factual content")
+
+
 # ── Core pipeline ──────────────────────────────────────────────────────────────
 
 def run_analysis(url: str, use_llm: bool):
@@ -127,15 +159,15 @@ def run_analysis(url: str, use_llm: bool):
             f"{clip_exp}"
         )
         if clip_result.get("blip_caption"):
-            visual_out += f"\n\nBLIP caption: {clip_result['blip_caption']}"
+            visual_out += f"\n\n**BLIP caption:** {clip_result['blip_caption']}"
         if clip_result.get("text_text_similarity") is not None:
             blip_text_sim = clip_result.get("text_text_similarity", 0.5)
             visual_out += (
-                "\n\nCaption↔BLIP text similarity: "
+                "\n\n**Caption↔BLIP text similarity:** "
                 f"{clip_result['text_text_similarity']*100:.1f}%"
             )
         if clip_result.get("error"):
-            visual_out += f"\n\nBLIP note: {clip_result['error']}"
+            visual_out += f"\n\n**BLIP note:** {clip_result['error']}"
     else:
         visual_out = (
             "ℹ️ No image or video could be extracted from this post.\n\n"
@@ -150,23 +182,37 @@ def run_analysis(url: str, use_llm: bool):
     if corroboration is None:
         corroboration = 0.5
     sources = source_result.get("sources", [])
+    post_type = source_result.get("post_type", "OTHER")
 
     if not source_result.get("checkable", True):
+        reason = _not_checkable_reason(str(post_type))
         source_out = (
-            f"ℹ️ Post type: {source_result.get('post_type', 'OTHER')}\n\n"
-            "This content is not checkable as a factual claim, so web corroboration is skipped."
+            f"**Post type:** `{post_type}`\n\n"
+            f"This post is not fact-checkable — {reason}."
         )
     elif sources:
-        source_lines = [f"**Corroboration score: {corroboration:.1%}** ({len(sources)} sources)\n"]
+        source_lines = [
+            f"**Post type:** `{post_type}`\n\n"
+            f"**Corroboration score:** {corroboration:.1%} ({len(sources)} sources)\n"
+        ]
+        source_lines.append("| Source | Stance |")
+        source_lines.append("|---|---|")
         for s in sources[:5]:
             stance = s.get("stance", "IRRELEVANT")
-            icon_s = "✅" if stance == "SUPPORTS" else ("❌" if stance == "REFUTES" else "⚪")
-            source_lines.append(
-                f"{icon_s} [{stance}] {s.get('chunk_preview', '')}\n[→ View source]({s.get('url', '')})"
-            )
-        source_out = "\n\n---\n\n".join(source_lines)
+            if stance == "SUPPORTS":
+                stance_badge = "<span style='color:#1f8b4c;font-weight:700;'>SUPPORTS</span>"
+            elif stance == "REFUTES":
+                stance_badge = "<span style='color:#c0392b;font-weight:700;'>REFUTES</span>"
+            else:
+                stance_badge = "<span style='color:#6b7280;font-weight:700;'>IRRELEVANT</span>"
+            source_url = s.get("url", "")
+            source_lines.append(f"| [Link]({source_url}) | {stance_badge} |")
+        source_out = "\n".join(source_lines)
     else:
-        source_out = "ℹ️ No relevant external evidence was retrieved for this claim."
+        source_out = (
+            f"**Post type:** `{post_type}`\n\n"
+            "ℹ️ No relevant external evidence was retrieved for this claim."
+        )
 
     if source_result.get("error"):
         source_out += f"\n\nSource pipeline note: {source_result['error']}"
@@ -215,6 +261,7 @@ def run_analysis(url: str, use_llm: bool):
         f"| 🌐 Source corroboration | {corroboration:.1%} ({len(sources)} sources) |"
     )
 
+    verdict = _format_verdict_banner(verdict)
     yield verdict, fetch_md, text_out, visual_out, source_out, score_out, thumb_img, worst_frame
 
 
@@ -225,11 +272,35 @@ body { font-family: 'Georgia', serif; }
 #title { text-align: center; padding: 20px 0 8px 0; }
 #subtitle { text-align: center; color: #666; margin-bottom: 24px; }
 #verdict-box {
-    border-left: 5px solid #e74c3c;
+    padding: 0;
+    background: transparent;
+}
+.verdict-banner {
+    border-left: 5px solid #f59e0b;
     padding: 20px;
     border-radius: 8px;
-    background: #fff5f5;
+    background: #fffbeb;
     font-size: 1.05em;
+}
+.verdict-red {
+    border-left-color: #e74c3c;
+    background: #fff5f5;
+}
+.verdict-green {
+    border-left-color: #1f8b4c;
+    background: #f0fff4;
+}
+.verdict-yellow {
+    border-left-color: #f59e0b;
+    background: #fffbeb;
+}
+.verdict-gray {
+    border-left-color: #6b7280;
+    background: #f5f6f7;
+}
+.verdict-blue {
+    border-left-color: #1d4ed8;
+    background: #eff6ff;
 }
 #score-box {
     border-left: 5px solid #2980b9;
