@@ -115,11 +115,23 @@ def run_analysis(url: str, use_llm: bool):
     elif post.image_path:
         img = Image.open(post.image_path).convert("RGB")
         thumb_img = img
-        clip_sim, clip_flag, clip_exp = check_caption_image(caption, img)
+        clip_result = check_caption_image(caption, img)
+        clip_sim = clip_result["similarity"]
+        clip_flag = clip_result["flag"]
+        clip_exp = clip_result["explanation"]
         visual_out = (
             f"**{clip_flag}** (CLIP similarity: {clip_sim*100:.1f}%)\n\n"
             f"{clip_exp}"
         )
+        if clip_result.get("blip_caption"):
+            visual_out += f"\n\nBLIP caption: {clip_result['blip_caption']}"
+        if clip_result.get("text_text_similarity") is not None:
+            visual_out += (
+                "\n\nCaption↔BLIP text similarity: "
+                f"{clip_result['text_text_similarity']*100:.1f}%"
+            )
+        if clip_result.get("error"):
+            visual_out += f"\n\nBLIP note: {clip_result['error']}"
     else:
         visual_out = (
             "ℹ️ No image or video could be extracted from this post.\n\n"
