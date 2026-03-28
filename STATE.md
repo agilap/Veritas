@@ -17,6 +17,7 @@ Layer status:
 | 2026-03-28 | Documented current layer status | Added baseline status for Layers 0-5 and UI |
 | 2026-03-28 | Updated env and setup checks | Replaced .env.example (Serper/Tavily only + optional Facebook cookies), removed GNews usage, and added bitsandbytes import validation in check_setup.py |
 | 2026-03-28 | Layer 2 BLIP verification added | Added blip_verify() with Salesforce/blip-image-captioning-base, safe module-level loading, CLIP text-text similarity, and integrated output fields in check_caption_image() |
+| 2026-03-28 | Layer 4 check-worthiness gate scaffolded | Replaced Wikipedia/GNews logic with TinyLlama NF4-quantized _check_worthiness() and staged cross_reference() dict stub with early return for non-checkable posts |
 
 ## Dependencies State
 
