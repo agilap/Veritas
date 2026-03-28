@@ -6,7 +6,7 @@ Layer status:
 - Layer 1: ✅ Complete
 - Layer 2: ✅ Complete
 - Layer 3: ✅ Complete
-- Layer 4: ⚠️ Needs rewrite — old Wikipedia/GNews -> RAG pipeline
+- Layer 4: ✅ Complete
 - Layer 5: ⚠️ Needs quantization — TinyLlama not 4-bit quantized
 - UI: ✅ Complete
 
@@ -19,6 +19,7 @@ Layer status:
 | 2026-03-28 | Layer 2 BLIP verification added | Added blip_verify() with Salesforce/blip-image-captioning-base, safe module-level loading, CLIP text-text similarity, and integrated output fields in check_caption_image() |
 | 2026-03-28 | Layer 4 check-worthiness gate scaffolded | Replaced Wikipedia/GNews logic with TinyLlama NF4-quantized _check_worthiness() and staged cross_reference() dict stub with early return for non-checkable posts |
 | 2026-03-28 | Layer 4 evidence retrieval implemented | Added _retrieve_evidence(): TinyLlama query rewrite, Serper->Tavily->DuckDuckGo fallback search, URL scraping, 300-word chunking, and TF-IDF top-chunk relevance scoring |
+| 2026-03-28 | Layer 4 stance + aggregation completed | Added _classify_stance(), _aggregate_score(), and full cross_reference() orchestration with non-checkable short-circuit and corroboration output from SUPPORTS/REFUTES evidence |
 
 ## Dependencies State
 
@@ -29,4 +30,4 @@ Layer status:
 | BLIP | In use for Layer 2 | Keep as-is | blip_verify() integrated |
 | OpenCV | In use for Layer 3 | Keep as-is | Keyframe extraction |
 | TinyLlama | In use without 4-bit NF4 | Use 4-bit NF4 quantization | Required for 4GB VRAM |
-| Wikipedia/GNews stack | Legacy Layer 4 path | Replace with RAG pipeline | Must be removed from active flow |
+| Wikipedia/GNews stack | Removed from active flow | Keep removed | Replaced by Serper/Tavily/DuckDuckGo + TinyLlama RAG pipeline |

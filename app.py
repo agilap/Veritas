@@ -141,21 +141,31 @@ def run_analysis(url: str, use_llm: bool):
     yield "⏳ Cross-referencing sources…", fetch_md, text_out, visual_out, "", "", thumb_img, worst_frame
 
     # ── Layer 4: Source cross-reference ───────────────────────────────────────
-    corroboration, sources = cross_reference(caption)
-    if sources:
+    source_result = cross_reference(caption)
+    corroboration = source_result.get("corroboration_score")
+    if corroboration is None:
+        corroboration = 0.5
+    sources = source_result.get("sources", [])
+
+    if not source_result.get("checkable", True):
+        source_out = (
+            f"ℹ️ Post type: {source_result.get('post_type', 'OTHER')}\n\n"
+            "This content is not checkable as a factual claim, so web corroboration is skipped."
+        )
+    elif sources:
         source_lines = [f"**Corroboration score: {corroboration:.1%}** ({len(sources)} sources)\n"]
         for s in sources[:5]:
-            icon_s = "✅" if s.supports_claim else "❌"
+            stance = s.get("stance", "IRRELEVANT")
+            icon_s = "✅" if stance == "SUPPORTS" else ("❌" if stance == "REFUTES" else "⚪")
             source_lines.append(
-                f"{icon_s} [{s.source}] **{s.title}**\n{s.snippet}\n[→ View source]({s.url})"
+                f"{icon_s} [{stance}] {s.get('chunk_preview', '')}\n[→ View source]({s.get('url', '')})"
             )
         source_out = "\n\n---\n\n".join(source_lines)
     else:
-        source_out = (
-            "ℹ️ No API keys configured — external source check skipped.\n\n"
-            "Add `GNEWS_API_KEY` "
-            "to your `.env` or HF Space Secrets."
-        )
+        source_out = "ℹ️ No relevant external evidence was retrieved for this claim."
+
+    if source_result.get("error"):
+        source_out += f"\n\nSource pipeline note: {source_result['error']}"
 
     yield "⏳ Generating verdict…", fetch_md, text_out, visual_out, source_out, "", thumb_img, worst_frame
 
@@ -311,7 +321,7 @@ with gr.Blocks(title="TruthScan") as demo:
             visual_out = gr.Markdown(elem_classes=["layer-card"])
 
         with gr.Tab("🌐 Layer 4 — Source Cross-Reference"):
-            gr.Markdown("_Wikipedia · GNews · IFCN fact-checkers — corroboration score_")
+            gr.Markdown("_Open-web RAG corroboration score (Serper/Tavily/DDG + TinyLlama)_")
             source_out = gr.Markdown(elem_classes=["layer-card"])
 
     gr.Markdown(

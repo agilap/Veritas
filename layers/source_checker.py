@@ -18,6 +18,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
 MODEL_ID = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
 POST_TYPES = ["FACTUAL_CLAIM", "OPINION", "SATIRE", "LIFESTYLE", "PERSONAL", "OTHER"]
+STANCE_TYPES = ["SUPPORTS", "REFUTES", "IRRELEVANT"]
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 TINYLLAMA_AVAILABLE = True
@@ -307,6 +308,51 @@ def _retrieve_evidence(caption: str) -> dict:
     }
 
 
+def _classify_stance(caption: str, chunk_text: str) -> str:
+    prompt = f"""Claim: "{caption}"
+Evidence: "{chunk_text[:400]}"
+Does this evidence SUPPORT, REFUTE, or is it IRRELEVANT to the claim?
+Answer with one word only: SUPPORTS, REFUTES, or IRRELEVANT."""
+
+    if not TINYLLAMA_AVAILABLE:
+        return "IRRELEVANT"
+
+    try:
+        tokenizer, model = _load_tinyllama()
+        inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=768)
+        input_device = model.device if hasattr(model, "device") else torch.device(DEVICE)
+        inputs = {k: v.to(input_device) for k, v in inputs.items()}
+
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=12,
+                do_sample=False,
+                pad_token_id=tokenizer.eos_token_id,
+            )
+
+        decoded = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        response_text = decoded[len(prompt):] if len(decoded) > len(prompt) else decoded
+        upper = response_text.upper()
+        for stance in STANCE_TYPES:
+            if stance in upper:
+                return stance
+    except Exception:
+        pass
+
+    return "IRRELEVANT"
+
+
+def _aggregate_score(stances: List[str]) -> float:
+    supports = sum(1 for s in stances if s == "SUPPORTS")
+    refutes = sum(1 for s in stances if s == "REFUTES")
+
+    usable = supports + refutes
+    if usable == 0:
+        return 0.5
+    return supports / usable
+
+
 def cross_reference(caption: str) -> dict:
     gate = _check_worthiness(caption)
     if not gate["checkable"]:
@@ -318,10 +364,35 @@ def cross_reference(caption: str) -> dict:
             "error": None,
         }
 
+    retrieval = _retrieve_evidence(caption)
+    if retrieval.get("error"):
+        return {
+            "checkable": True,
+            "post_type": "FACTUAL_CLAIM",
+            "corroboration_score": 0.5,
+            "sources": [],
+            "error": retrieval.get("error"),
+        }
+
+    stances: List[str] = []
+    sources = []
+    for chunk in retrieval.get("evidence_chunks", []):
+        chunk_text = str(chunk.get("text", ""))
+        stance = _classify_stance(caption, chunk_text)
+        stances.append(stance)
+        sources.append(
+            {
+                "url": str(chunk.get("url", "")),
+                "stance": stance,
+                "chunk_preview": chunk_text[:150],
+            }
+        )
+
+    corroboration_score = float(_aggregate_score(stances))
     return {
         "checkable": True,
-        "post_type": gate["post_type"],
-        "corroboration_score": None,
-        "sources": [],
-        "error": "RAG pipeline not implemented yet",
+        "post_type": "FACTUAL_CLAIM",
+        "corroboration_score": corroboration_score,
+        "sources": sources,
+        "error": None,
     }
