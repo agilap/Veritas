@@ -244,13 +244,26 @@ def _retrieve_evidence(caption: str) -> dict:
 
     collected_urls: List[str] = []
     seen = set()
+    search_errors: List[str] = []
 
     for query in queries:
-        urls = _search_serper(query)
+        urls: List[str] = []
+        try:
+            urls = _search_serper(query)
+        except Exception as exc:
+            search_errors.append(f"Serper failed: {exc}")
+
         if not urls:
-            urls = _search_tavily(query)
+            try:
+                urls = _search_tavily(query)
+            except Exception as exc:
+                search_errors.append(f"Tavily failed: {exc}")
+
         if not urls:
-            urls = _search_duckduckgo(query)
+            try:
+                urls = _search_duckduckgo(query)
+            except Exception as exc:
+                search_errors.append(f"DuckDuckGo failed: {exc}")
 
         for url in urls:
             if url in seen:
@@ -301,10 +314,14 @@ def _retrieve_evidence(caption: str) -> dict:
             # Skip bad URLs silently.
             continue
 
+    error_message = None
+    if not collected_urls and search_errors:
+        error_message = " ; ".join(search_errors)
+
     return {
         "queries": queries,
         "evidence_chunks": evidence_chunks,
-        "error": None,
+        "error": error_message,
     }
 
 

@@ -94,7 +94,7 @@ def _rule_based_verdict(
             + (f"Main concern: {issues[0]}." if issues else "Treat with caution.")
         )
     else:
-        verdict = "🚨 Likely Fabricated"
+        verdict = "🚨 Likely Fake"
         if issues:
             body = (
                 f"Multiple red flags detected (composite score {final_score:.0%}): "
@@ -181,7 +181,7 @@ WEIGHTS:
 - source: 0.30
 - video: 0.10
 
-Write a plain-English verdict (≤4 sentences). Start with the overall verdict: Likely Authentic / Suspicious / Likely Fabricated."""
+Write a plain-English verdict (≤4 sentences). Start with the overall verdict: Likely Real / Uncertain / Likely Fake."""
 
     try:
         messages = [

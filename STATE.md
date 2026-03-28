@@ -1,5 +1,7 @@
 # State
 
+Overall Status: ✅ Complete
+
 Layer status:
 
 - Layer 0: ✅ Complete
@@ -22,6 +24,15 @@ Layer status:
 | 2026-03-28 | Layer 4 stance + aggregation completed | Added _classify_stance(), _aggregate_score(), and full cross_reference() orchestration with non-checkable short-circuit and corroboration output from SUPPORTS/REFUTES evidence |
 | 2026-03-28 | Layer 5 TinyLlama reuse + NF4 finalized | Updated verdict.py to reuse source_checker TinyLlama loader (single app-wide instance), handle Layer 4 checkable/post_type outputs, apply new weighted formula, and fall back to rule-based verdict on model/OOM errors |
 | 2026-03-28 | UI refreshed for new Layer 2/4/5 outputs | Layer 2 now shows BLIP caption + text-text similarity, Layer 4 shows post type + checkability-aware source table with stance badges, and verdict banner color mapping now supports fake/real/uncertain/non-checkable/satire labels |
+| 2026-03-28 | Final test suite and stability pass completed | Added full test files for text/clip/source/verdict, fixed API-failure error propagation in Layer 4 retrieval, aligned fallback verdict label to "Likely Fake", and verified all tests pass (16/16) |
+
+## Known Issues
+
+| Date | Issue | Status | Resolution |
+| --- | --- | --- | --- |
+| 2026-03-28 | Layer 4 retrieval returned `error=None` even when all API providers failed | ✅ Resolved | Updated `_retrieve_evidence()` to catch provider exceptions and surface a combined error message when no URLs are collected |
+| 2026-03-28 | Rule-based verdict fallback used "Likely Fabricated" label, conflicting with expected "Likely Fake" label matching | ✅ Resolved | Updated fallback verdict label and verdict prompt phrasing in `layers/verdict.py` to use "Likely Fake" |
+| 2026-03-28 | Test execution in project venv initially blocked because `pytest` was not installed | ✅ Resolved | Installed `pytest` in `venv` and executed tests with `venv/bin/python -m pytest tests/ -v` |
 
 ## Dependencies State
 
