@@ -102,12 +102,15 @@ def run_analysis(url: str, use_llm: bool):
     worst_frame = None
     is_video    = False
     thumb_img   = None
+    blip_text_sim = 0.5
+    video_consistency = 0.5
 
     if post.video_path:
         is_video = True
         clip_sim, clip_flag, clip_exp, worst_frame, worst_ts = check_caption_video(
             caption, post.video_path
         )
+        video_consistency = clip_sim
         visual_out = (
             f"**{clip_flag}** (avg CLIP similarity: {clip_sim*100:.1f}%)\n\n"
             f"{clip_exp}"
@@ -126,6 +129,7 @@ def run_analysis(url: str, use_llm: bool):
         if clip_result.get("blip_caption"):
             visual_out += f"\n\nBLIP caption: {clip_result['blip_caption']}"
         if clip_result.get("text_text_similarity") is not None:
+            blip_text_sim = clip_result.get("text_text_similarity", 0.5)
             visual_out += (
                 "\n\nCaption↔BLIP text similarity: "
                 f"{clip_result['text_text_similarity']*100:.1f}%"
@@ -180,6 +184,9 @@ def run_analysis(url: str, use_llm: bool):
         n_sources=len(sources),
         is_video=is_video,
         use_llm=use_llm,
+        l4=source_result,
+        blip_sim=blip_text_sim,
+        video_sim=video_consistency,
     )
 
     # ── Composite authenticity score ──────────────────────────────────────────
